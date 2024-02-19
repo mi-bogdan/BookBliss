@@ -38,3 +38,5 @@ Makefile
 
 doc-dev
 .vscode/*
+
+data
