@@ -1,22 +1,27 @@
 from django.db import models
-from django.contrib.auth.models import User
-
-from mptt.models import TreeForeignKey, MPTTModel
+from mptt.models import MPTTModel, TreeForeignKey
 from simple_history.models import HistoricalRecords
 
 
 class Category(MPTTModel):
     """Категории"""
-    title = models.CharField(verbose_name='Названия', max_length=100)
+
+    title = models.CharField(verbose_name="Названия", max_length=100)
     parent = TreeForeignKey(
-        'self', verbose_name="Родитель", related_name='children', on_delete=models.SET_NULL, null=True, blank=True)
-    history = HistoricalRecords()
+        "self",
+        verbose_name="Родитель",
+        related_name="children",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    history = HistoricalRecords(excluded_fields=["lft", "rght", "tree_id", "level"])
 
     def __str__(self) -> str:
         return self.title
 
     class MPTTMeta:
-        order_insertion_by = ['title']
+        order_insertion_by = ["title"]
 
     class Meta:
         verbose_name = "Категория"
@@ -26,7 +31,8 @@ class Category(MPTTModel):
 
 class Author(models.Model):
     """Автор"""
-    name = models.CharField(verbose_name='Автор', max_length=256)
+
+    name = models.CharField(verbose_name="Автор", max_length=256)
     history = HistoricalRecords()
 
     def __str__(self) -> str:
@@ -40,8 +46,9 @@ class Author(models.Model):
 
 class PublishingHouse(models.Model):
     """Издательство"""
-    title = models.CharField(verbose_name='Издательство', max_length=250)
-    descriptions = models.TextField(verbose_name='Описание')
+
+    title = models.CharField(verbose_name="Издательство", max_length=250)
+    descriptions = models.TextField(verbose_name="Описание")
     history = HistoricalRecords()
 
     def __str__(self) -> str:
@@ -55,20 +62,19 @@ class PublishingHouse(models.Model):
 
 class Book(models.Model):
     """Книги"""
-    title = models.CharField(verbose_name='Заголовок', max_length=100)
-    descriptions = models.TextField(verbose_name='Описание')
+
+    title = models.CharField(verbose_name="Заголовок", max_length=100)
+    descriptions = models.TextField(verbose_name="Описание")
     category = models.ForeignKey(
-        Category, verbose_name='Категория', on_delete=models.CASCADE)
-    create_at = models.DateTimeField(
-        verbose_name="Дата публикации", auto_now_add=True)
-    update_at = models.DateTimeField(
-        verbose_name="Дата обновления", auto_now=True)
-    publishingHouse = models.ForeignKey(
-        PublishingHouse, verbose_name='Издательство', on_delete=models.CASCADE)
-    price = models.DecimalField(
-        verbose_name='Цена', max_digits=10, decimal_places=2)
-    img = models.ImageField(verbose_name="Изображение",
-                            upload_to='photo/', null=True)
+        Category, verbose_name="Категория", on_delete=models.CASCADE
+    )
+    create_at = models.DateTimeField(verbose_name="Дата публикации", auto_now_add=True)
+    update_at = models.DateTimeField(verbose_name="Дата обновления", auto_now=True)
+    publishing_house = models.ForeignKey(
+        PublishingHouse, verbose_name="Издательство", on_delete=models.CASCADE
+    )
+    price = models.DecimalField(verbose_name="Цена", max_digits=10, decimal_places=2)
+    img = models.ImageField(verbose_name="Изображение", upload_to="photo/", null=True)
     history = HistoricalRecords()
 
     def __str__(self) -> str:
@@ -82,71 +88,15 @@ class Book(models.Model):
 
 class ImageBook(models.Model):
     """Изображение к книгам"""
-    book = models.ForeignKey(Book, verbose_name='Книга',
-                             on_delete=models.CASCADE)
-    img = models.ImageField(
-        verbose_name="Изображение книги", upload_to='book/')
+
+    book = models.ForeignKey(Book, verbose_name="Книга", on_delete=models.CASCADE)
+    img = models.ImageField(verbose_name="Изображение книги", upload_to="book/")
     history = HistoricalRecords()
 
     def __str__(self) -> str:
-        return self.title
+        return self.book.title
 
     class Meta:
         verbose_name = "Изображение к книге"
         verbose_name_plural = "Изображение к книгам"
         db_table = "image_book"
-
-
-class RatingStars(models.Model):
-    """Звезды рейтинга"""
-    stars = models.PositiveSmallIntegerField(verbose_name='звезда', default=0)
-    history = HistoricalRecords()
-
-    def __str__(self) -> str:
-        return self.stars
-
-    class Meta:
-        verbose_name = "Звезды рейтинга"
-        verbose_name_plural = "Звезды рейтингов"
-        db_table = "rating_stars"
-
-
-class Rating(models.Model):
-    """Рейтинг"""
-    user = models.ForeignKey(
-        User, verbose_name='Пользователь', on_delete=models.CASCADE)
-    stars = models.ForeignKey(
-        RatingStars, verbose_name='Звезда рейтинга', on_delete=models.CASCADE)
-    book = models.ForeignKey(Book, verbose_name='Книга',
-                             on_delete=models.CASCADE)
-    history = HistoricalRecords()
-
-    def __str__(self) -> str:
-        return f"{self.stars}-{self.book}"
-
-    class Meta:
-        verbose_name = "Звезды рейтинга"
-        verbose_name_plural = "Звезды рейтингов"
-        db_table = "rating"
-
-
-class Reviews(models.Model):
-    """Отзывы"""
-    user = models.ForeignKey(
-        User, verbose_name='Пользователь', on_delete=models.CASCADE)
-    dignities = models.CharField(
-        verbose_name='Достоиства', blank=True, max_length=250)
-    disadvantages = models.CharField(
-        verbose_name='Недостатки', blank=True, max_length=250)
-    comments = models.TextField(verbose_name='Комментарий')
-    create_at = models.DateTimeField(
-        verbose_name="Дата публикации", auto_now_add=True)
-    history = HistoricalRecords()
-
-    def __str__(self) -> str:
-        return f"{self.user}-{self.comments}"
-
-    class Meta:
-        verbose_name = "Отзыв"
-        verbose_name_plural = "Отзывы"
-        db_table = "raviews"
